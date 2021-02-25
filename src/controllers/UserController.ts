@@ -1,13 +1,17 @@
 import { Request, Response } from 'express';
-import { getRepository } from 'typeorm';
+import { getCustomRepository } from 'typeorm';
 
-import { User } from '../models/User';
+import { UserRepository } from '../repositories/UsersRepository';
 
 export class UserController {
   async create(request: Request, response: Response) {
     const { name, email } = request.body;
 
-    const userRepository = getRepository(User);
+    if (!name || !email) {
+      return response.status(400).json({ error: `Missing data!` });
+    }
+
+    const userRepository = getCustomRepository(UserRepository);
 
     const userAlreadyExists = await userRepository.findOne({
       email,
@@ -24,6 +28,6 @@ export class UserController {
 
     await userRepository.save(user);
 
-    return response.json(user);
+    return response.status(201).json(user);
   }
 }
