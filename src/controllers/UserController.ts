@@ -3,12 +3,22 @@ import { getCustomRepository } from 'typeorm';
 
 import { UserRepository } from '../repositories/UsersRepository';
 
+import * as yup from 'yup';
+import { AppError } from '../errors/AppError';
+
 export class UserController {
   async create(request: Request, response: Response) {
     const { name, email } = request.body;
 
-    if (!name || !email) {
-      return response.status(400).json({ error: `Missing data!` });
+    const schema = yup.object().shape({
+      name: yup.string().required(),
+      email: yup.string().email().required(),
+    });
+
+    try {
+      await schema.validate(request.body, { abortEarly: false });
+    } catch (err) {
+      throw new AppError(err.errors);
     }
 
     const userRepository = getCustomRepository(UserRepository);
@@ -18,7 +28,7 @@ export class UserController {
     });
 
     if (userAlreadyExists) {
-      return response.status(400).json({ error: 'Email already exists!' });
+      throw new AppError('Email already exists!');
     }
 
     const user = userRepository.create({
